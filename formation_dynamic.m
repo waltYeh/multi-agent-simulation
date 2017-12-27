@@ -48,7 +48,7 @@ function dx = agreement_protocol_func(t,x,G,axis)
 dx = zeros(numnodes(G),1);
 for i=1:numnodes(G)
     N=neighbors(G,i);
-    for j=1:N
+%     for j=1:N
         if axis=='x'
             dx(i)=dx(i)-(x(i)-x(j)-(G.Nodes.ksi_x(i)-G.Nodes.ksi_x(j)));
         elseif axis=='y'
