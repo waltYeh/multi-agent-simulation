@@ -1,7 +1,7 @@
 function unicycle_2()
 m=1;
-rate0=0.0;
-k=-1;
+rate0=0.2;
+k=1;
 t_final = 30;
 % s = [1 1 1 2 2 3 3 4 5 5 6 7 7 8 1  2 9];
 % t = [2 4 8 3 7 4 6 5 6 8 7 8 9 9 10 10 10];
@@ -61,7 +61,8 @@ plot(r(i,:));
 hold on
 end
 hold on
-    h2=plot(CoM,'-*');
+%     h2=plot(CoM,'-*');
+
 % for i=1:length(r)
 %     h1(i)=plot(r(:,i)','o');
 %     h2(i)=plot(CoM(i)','*');

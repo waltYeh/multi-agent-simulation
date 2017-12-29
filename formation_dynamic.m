@@ -44,6 +44,7 @@ for i=1:11
     
 end
 end
+
 function dx = agreement_protocol_func(t,x,G,axis)
 dx = zeros(numnodes(G),1);
 for i=1:numnodes(G)
@@ -57,6 +58,7 @@ for i=1:numnodes(G)
     end
 end
 end
+
 function h=draw(L,ux,uy,arg)
 hold on
 n=length(L);

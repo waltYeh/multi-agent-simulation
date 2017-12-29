@@ -1,75 +1,61 @@
 function centralized_formation()
+close all
 goal=12+12i;
 % obst=[];
-obst=[3+2i;2+3i;4+3i;3+4i;5+5i];
+obst=[3+2i;2+3i;4+3i;3+4i;5+4.8i;5+6.5i];
 vdes=1;
-k=[1;2;1;5];
+k=[1;2;2;2];
 % k_obst, k_v, k_x k_form
 t_final = 30;
-s = [1 2 3];
-t = [2 3 1];
-G = graph(s,t);
-sd = [2 2];
-td = [1 3];
-D = digraph(sd,td);
-incidence_D=[1,0;-1,-1;0,1];
-% zref1=[1+1i;-1-1i]/2;
-zref1=[0.5+0.5*sqrt(3)*1i;0.5-sqrt(3)/2+sqrt(3)/2-0.5i];
+sd = [2 2 3];
+td = [1 3 4];
+zref1=[1+1i;-1-1i;-1-1i]/2;
+zref2=[1i;-1;-1i]/2;
+EdgeTable = table([sd' td'],zref1,zref2,'VariableNames',{'EndNodes' 'zref1' 'zref2'});
+D = digraph(EdgeTable);
+% incidence_D=[1,0;-1,-1;0,1];
 
-r0=[1+1i;1;0];
-v0=[0.2i,0.2i,0.2i]';
+
+
+r0=[1+1i;0.5+0.5i;0;1];
+r0=r0-3-3i;
+v0=[0,0,0,0]';
 u0=[v0;r0];
-[Tode,Uode]=ode45(@(t,u)ctrl_law( t,u,D,k,goal,obst,vdes,zref1,[0;0] ),[0,t_final],u0);
-vel = Uode(:,1:3);
-pos = Uode(:,4:6);
-
+op=odeset('Events',@(t,y)eventfun(t,y,goal));
+[Tode,Uode]=ode45(@(t,u)ctrl_law( t,u,D,k,goal,obst,vdes),[0,t_final],u0,op);
+vel = Uode(:,1:numnodes(D));
+pos = Uode(:,numnodes(D)+1:numnodes(D)*2);
+err1=zeros(length(Tode),1);
+err2=zeros(length(Tode),1);
+for ii=1:length(Tode)
+    [err1(ii),err2(ii)]=centralized_form_err(pos(ii,:),D);
+end
 figure(1)
 hold on
-for i=1:3
-    plot(pos(:,i))
-%     quiver(real(pos(:,i)),imag(pos(:,i)),cos(theta(:,i)),sin(theta(:,i)))
-%     quiver(real(pos(1:10:end,i)),imag(pos(1:10:end,i)),real(vel(1:10:end,i)),imag(vel(1:10:end,i)))
-    axis equal
-end
+axis equal
+plot(goal,'o')
+plot(obst,'o')
+grid
 for i=1:20:length(Tode)
     plot(real(pos(i,:)),imag(pos(i,:)),'--')
 end
-plot(goal,'+')
-plot(obst,'+')
+for i=1:numnodes(D)
+    plot(pos(:,i))
+%     quiver(real(pos(:,i)),imag(pos(:,i)),cos(theta(:,i)),sin(theta(:,i)))
+%     quiver(real(pos(1:10:end,i)),imag(pos(1:10:end,i)),real(vel(1:10:end,i)),imag(vel(1:10:end,i)))
+end
 hold off
-grid
 figure(2)
-plot(Tode,abs(vel))
-% for i=1:10
-%     plot(Tode,real(Uode(:,i+10)))
-%     hold on
-% end
-% hold off
-% grid
-% figure(3)
-% for i=1:10
-%     plot(Tode,imag(Uode(:,i+10)))
-%     hold on
-% end
-% hold off
-% grid
-% figure(6)
-% for i=1:10
-% plot(r(i,:));
-% hold on
-% end
-% hold on
-% plot(CoM,'-*');
-% draw_graph(laplacian(G),real(r(:,end)),imag(r(:,end)),'-+b')
-% hold off
-% axis equal
-% grid
+plot(Tode,abs(vel),'*')
+figure(3)
+plot(Tode,err1,Tode,err2)
 end
 
 
 
-function du = ctrl_law( t,u,D,k,goal,obst,vmax,zref,d_zref )
+function du = ctrl_law( t,u,D,k,goal,obst,vmax )
 n=numnodes(D);
+
 G=graph(D.Edges);
 LD=laplacian(G);
 % invD=flipedge(D);
@@ -79,6 +65,13 @@ du=zeros(n*2,1);
 n_obst=length(obst);
 x=u(n+1:2*n);
 vel=u(1:n);
+[err1,err2]=centralized_form_err(x,D);
+if(err1>err2)
+    zref=D.Edges.zref2;
+else
+    zref=D.Edges.zref1;
+end
+d_zref=zeros(numedges(D),1);
 a_form=-k(4)*LD*x-k(4)*LD*vel+k(4)*incidence(D)*zref+k(4)*incidence(D)*d_zref;
 for ii=1:n
 %     F_obst
@@ -99,4 +92,23 @@ du(1:n)=du(1:n)+a_form;
 for ii=1:n
     du(ii+n)=vel(ii);
 end
+end
+function [err1,err2]=centralized_form_err(x,D)
+% n=numnodes(D);
+% G=graph(D.Edges);
+err1=0;
+err2=0;
+for ii=1:numedges(D)
+    err1=err1+(abs( x(D.Edges.EndNodes(ii,1)) - x(D.Edges.EndNodes(ii,2)) )^2-( abs(D.Edges.zref1(ii)) )^2)^2;
+    err2=err2+(abs( x(D.Edges.EndNodes(ii,1)) - x(D.Edges.EndNodes(ii,2)) )^2-( abs(D.Edges.zref2(ii)) )^2)^2;
+end
+end
+function [value,isterminal,direction] = eventfun(t,y,goal)
+n2=length(y);
+n=n2/2;
+avr_pos=sum(y(n+1:n2))/n;
+dist=abs(avr_pos-goal);
+value = dist-1;
+isterminal= 1;
+direction = 0;
 end
