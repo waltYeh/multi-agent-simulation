@@ -1,8 +1,9 @@
 function unicycle_2()
+close all
 m=1;
-rate0=0.2;
-k=1;
-t_final = 30;
+rate0=0.3;
+k=-1;
+t_final = 40;
 % s = [1 1 1 2 2 3 3 4 5 5 6 7 7 8 1  2 9];
 % t = [2 4 8 3 7 4 6 5 6 8 7 8 9 9 10 10 10];
 s = [1 2 3 4 5 6 7 8 9 10];
@@ -34,14 +35,17 @@ for i=1:10
     hold on
 end
 hold off
+title('theta_i')
 grid
 figure(2)
+
 for i=1:10
     plot(Tode,real(Uode(:,i+10)))
     hold on
 end
 hold off
 grid
+title('pos x')
 figure(3)
 for i=1:10
     plot(Tode,imag(Uode(:,i+10)))
@@ -49,19 +53,29 @@ for i=1:10
 end
 hold off
 grid
+title('pos y')
 figure(4)
+subplot(1,2,1)
 plot(Tode,real(states),Tode,imag(states))
+title('p')
+legend('x','y')
+xlabel('t(s)')
 grid
-figure(5)
+subplot(1,2,2)
 plot(Tode,real(potentials),Tode,imag(potentials))
 grid
+title('U')
+xlabel('t(s)')
+
 figure(6)
+hold on
+    h2=plot(CoM,'-*');
+    legend('Center of Mass')
 for i=1:10
 plot(r(i,:));
 hold on
 end
-hold on
-%     h2=plot(CoM,'-*');
+
 
 % for i=1:length(r)
 %     h1(i)=plot(r(:,i)','o');
@@ -77,7 +91,7 @@ hold on
 %     pause(0.1)
 % end
 % plot(r(:,end),'-+')
-draw_graph(laplacian(G),real(r(:,end)),imag(r(:,end)),'-+b')
+% draw_graph(laplacian(G),real(r(:,end)),imag(r(:,end)),'-+b')
 hold off
 axis equal
 grid
@@ -90,7 +104,8 @@ end
 
 function res=potential(m,theta,G)
 n=numnodes(G);
-res=1/2/n/m^2*conj(exp(1i*m*theta))'*ones(n,1)*ones(n,1)'*exp(i*m*theta);
+% res=1/2/n/m^2*conj(exp(1i*m*theta))'*ones(n,1)*ones(n,1)'*exp(i*m*theta);
+res=n/2*abs(state(m,theta,G))^2;
 end
 
 function res=critical_pts(m,theta,G)
